@@ -26,7 +26,7 @@ class qjh(object):
         chrome_option = webdriver.ChromeOptions()
         # chrome_option.add_argument('--headless') # 设置chrome浏览器无界面模式，使用个人账号时可以使用，使用IP登录时不能使用
         # chromedriver不同版本下载地址：https://chromedriver.storage.googleapis.com/index.html
-        self.driver = webdriver.Chrome(executable_path=r"/Users/fubo/Desktop/Git/spider_new/chromedriver", chrome_options=chrome_option)
+        self.driver = webdriver.Chrome(chrome_options=chrome_option)
         self.driver.set_window_size(1440, 900)
 
     ''' ip登录函数 '''
@@ -181,16 +181,24 @@ class qjh(object):
         # 第四步：点击确定
         djqd = WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//a[@id="batchDownload"]')))
         self.driver.execute_script("arguments[0].click();", djqd)
+        self.driver.switch_to.window(self.driver.window_handles[0])
+        print('切换成功')
         # print('确定点击成功')
 
     '''往方框中输入页面并进行跳转'''
     def input_page(self, page):
         # 往方框里输入页码
-        input = WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, '//input[@name="jumpToNum"]')))
-        input.send_keys(page)
+        self.driver.implicitly_wait(10)
+        print('没问题')
+        js_button = 'document.documentElement.scrollTop=10000'
+        self.driver.execute_script(js_button)
+        # inputs = WebDriverWait(self.driver, 100, 0.3).until(EC.presence_of_element_located((By.XPATH, '//input[@name="jumpToNum"]')))
+        # print(inputs)
+        inputs = self.driver.find_element(By.XPATH, '//input[@name="jumpToNum"]')
+        inputs.send_keys(page)
         print('页码输入成功')
         # 点击确定按钮跳转，需要使用js增强，防止页面丢失
-        button = WebDriverWait(self.driver, 100).until(EC.element_to_be_clickable((By.XPATH, '//a[@class="jumpBtn"]')))
+        button = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//a[@class="jumpBtn"]')))
         self.driver.execute_script("arguments[0].click();", button)
         print('页面跳转点击成功')
         time.sleep(1)  # 等待加载
@@ -226,17 +234,23 @@ class qjh(object):
             res = res[3][0]  #
             print('开始移动验证码滑块')
             self.start_move(res)
+            # 给够时间让验证码消失
+            time.sleep(1)
             print('滑块移动结束')
             # 判断验证码是否存在的元素
-            time.sleep(0.5)
             try:
                 if self.driver.find_element_by_xpath('//div[@class="handler handler_bg"]'): #如果没有了滑块的页面，就说明验证成功，可以跳出循环
                     print('滑块未通过')
                     # 点击刷新
                     self.driver.find_element_by_xpath('//div[@id="drag"]/a/div').click()
-                    continue
+                    # try:
+                    #     self.driver.find_element_by_xpath('//div[@id="drag"]/a/div').click()
+                    # except:
+                    #     self.driver.find_element_by_xpath('//div[@id="drag"]/a/div').click()
+                    # continue
             except Exception as e:
-                break
+                print(e)
+                return
 
     # 循环下载
     def loop_zip(self):
@@ -255,11 +269,12 @@ class qjh(object):
                 # 加一个验证码判断使用异常捕获
                 try:
                     if self.driver.find_element_by_xpath('//div[@class="handler handler_bg"]'):
-                        self.verify()
                         print('已检测出验证码')
+                        self.verify()
                 except Exception as e:
                     print('未触发验证码')
                     pass
+
                 self.download()
             print("第", page, "页下载成功")
             print('====' * 20)
@@ -394,20 +409,11 @@ class qjh(object):
             self.to_buttom()
             time.sleep(1)
             # 点击更多 进行法宝推荐页面。有多重情况，所以多次尝试 //*[@id="rightContent"]/div/div/div[8]/a ；//*[@id="rightContent"]/div/div/div[10]/a
-            try:
-                more = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="rightContent"]/div/div/div[8]/a')))
-                self.driver.execute_script("arguments[0].click();", more)
-                time.sleep(3)
-            except:
-                try:
-                    more = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="rightContent"]/div/div/div[10]/a')))
-                    self.driver.execute_script("arguments[0].click();", more)
-                    time.sleep(3)
-                except:
-                    more = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="rightContent"]/div/div/div[6]/a')))
-                    self.driver.execute_script("arguments[0].click();", more)
-                    time.sleep(3)
-
+            # 点击更多
+            more = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="rightContent"]/div/div/div[last()]/a')))
+            self.driver.execute_script("arguments[0].click();", more)
+            time.sleep(1)
             # 进入更多年份页面后，循环省份
             for i in item[1]:
                 print("***" * 40)
