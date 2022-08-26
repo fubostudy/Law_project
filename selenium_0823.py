@@ -265,19 +265,23 @@ class qjh(object):
                 print('====' * 20)
                 continue
             else:
-                self.input_page(page)
                 # 加一个验证码判断使用异常捕获
                 try:
+                    self.input_page(page)
                     if self.driver.find_element_by_xpath('//div[@class="handler handler_bg"]'):
                         print('已检测出验证码')
                         self.verify()
+                        self.download()
+                        print("第", page, "页下载成功")
+                        print('====' * 20)
                 except Exception as e:
+                    self.input_page(page)
                     print('未触发验证码')
+                    self.download()
+                    print("第", page, "页下载成功")
+                    print('====' * 20)
                     pass
 
-                self.download()
-            print("第", page, "页下载成功")
-            print('====' * 20)
             time.sleep(2)  # 跳转到新页面时等待2s
 
     # 核心函数  # TODO BUG 会中断
@@ -438,22 +442,11 @@ class qjh(object):
                 self.to_buttom()
                 self.to_buttom()
                 # 点击更多 进行法宝推荐页面。有多重情况，所以多次尝试 //*[@id="rightContent"]/div/div/div[8]/a ；//*[@id="rightContent"]/div/div/div[10]/a
-                try:
-                    more = WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, '//*[@id="rightContent"]/div/div/div[8]/a')))
-                    self.driver.execute_script("arguments[0].click();", more)
-                    time.sleep(3)
-                except:
-                    try:
-                        more = WebDriverWait(self.driver, 10).until(
-                            EC.element_to_be_clickable((By.XPATH, '//*[@id="rightContent"]/div/div/div[10]/a')))
-                        self.driver.execute_script("arguments[0].click();", more)
-                        time.sleep(3)
-                    except:
-                        more = WebDriverWait(self.driver, 10).until(
-                            EC.element_to_be_clickable((By.XPATH, '//*[@id="rightContent"]/div/div/div[6]/a')))
-                        self.driver.execute_script("arguments[0].click();", more)
-                        time.sleep(3)
+
+                more = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, '//*[@id="rightContent"]/div/div/div[8]/a')))
+                self.driver.execute_script("arguments[0].click();", more)
+                time.sleep(3)
 
             print("***" * 40)
             print(item[0], "下载完成")
